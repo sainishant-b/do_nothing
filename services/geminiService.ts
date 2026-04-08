@@ -1,10 +1,25 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { QuoteData } from '../types';
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+const FALLBACK_QUOTE: QuoteData = {
+  text: "Silence is the language of God, all else is poor translation.",
+  author: "Rumi"
+};
+
+const getApiKey = (): string | undefined => {
+  // Vite injects these at build-time through define in vite.config.ts.
+  const key = process.env.GEMINI_API_KEY || process.env.API_KEY;
+  return key?.trim() ? key : undefined;
+};
 
 export const fetchZenWisdom = async (): Promise<QuoteData> => {
   try {
+    const apiKey = getApiKey();
+    if (!apiKey) {
+      return FALLBACK_QUOTE;
+    }
+
+    const ai = new GoogleGenAI({ apiKey });
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
       contents: "Generate a short, profound, and calming quote about the art of doing nothing, silence, or stillness. It should be philosophical.",
@@ -33,9 +48,6 @@ export const fetchZenWisdom = async (): Promise<QuoteData> => {
 
   } catch (error) {
     console.error("Failed to fetch wisdom:", error);
-    return {
-      text: "Silence is the language of God, all else is poor translation.",
-      author: "Rumi"
-    };
+    return FALLBACK_QUOTE;
   }
 };
